@@ -35,16 +35,23 @@ double s2d(string str){
 
 string dataSplit(string str){
     string res = "";
-    int indexBegin = -1;
-    int index = str.find("=");
-    while(index != -1){
-        res = res + string(str.begin() + (indexBegin + 1), str.begin() + index);
+    int pos = str.find("=");
+    int index = -1;
+    while(pos != -1){
+        res = res + string(str.begin() + (index + 1), str.begin() + pos);
         res = res + " " + "=" + " ";
-        indexBegin = index;
-        index = str.find("=", index + 1);
+        index = pos;
+        pos = str.find("=", pos + 1);
     }
-    res = res + string(str.begin() + (indexBegin + 1), str.begin() + str.size());
+    res = res + string(str.begin() + (index + 1), str.begin() + str.size());
     return res;
+}
+
+string standard(string str){    //去逗号
+    string s = str;  
+    if(s[s.size() - 1] == ',')
+        s = s.substr(0,s.size() - 1);
+    return s;
 }
 
 int main(){
@@ -53,29 +60,24 @@ int main(){
     if(!in)
         cout << "file is not open!" << endl;
     string line;
-    int count = 0;
+    int count;
     while(getline(in, line)){
         stringstream ss;
-        vector<string> vs;
+        vector<string> tempstr;
         string temp;
         line = dataSplit(line);
         ss << line;
         while(ss >> temp)
-        {
-            if(temp[temp.size() - 1] == ',')
-                temp = temp.substr(0 ,temp.size() - 1);
-            vs.push_back(temp);
-            // cout << "temp = " << temp << endl;
-        }
-        if(vs.size()){
-            string upper = vs[0];
+            tempstr.push_back(temp);
+        if(tempstr.size()){
+            string upper = tempstr[0];
             transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
             if(upper == "TITTLE"){
-                title = vs[2];
+                title = tempstr[2];
                 cout << title << endl;
             }
             else if(upper == "VARIABLES"){
-                variables.push_back(vs[2]);
+                variables.push_back(tempstr[2]);
                 for(int i = 1; i < 12; i++){
                     getline(in, line);
                     line = string(line.begin() + 1, line.end() - 2);
@@ -84,16 +86,17 @@ int main(){
                 }
             }
             else if(upper == "ZONE"){
-                zone = vs[3];
+                zone = tempstr[3].substr(3, tempstr[1].size() - 1);
                 cout << zone << endl;
                 getline(in, line); // STRANDID=0, SOLUTIONTIME=0
             }
+
             else if(upper == "NODES"){
-                nodeNum = s2i(vs[2]);
-                 cout << nodeNum << endl;
-                element = s2i(vs[5]);
+                nodeNum = s2i(standard(tempstr[2]));
+                // cout << nodeNum << endl;
+                element = s2i(standard(tempstr[5]));
                 // cout << element << endl;
-                zoneType = vs[8];
+                zoneType = tempstr[8];
                 // cout << zoneType << endl;
                 getline(in, line); // DATAPACKING=POINT
                 getline(in, line); // FACENEIGHBORCONNECTIONS=737908
@@ -106,18 +109,18 @@ int main(){
                 if(count < nodeNum){
                     value.resize(12);
                     for(int i = 0; i < 12; i++){
-                        // cout << s2d(vs[i]) << endl;
-                        value[i].push_back(s2d(vs[i]));
+                        // cout << s2d(tempstr[i]) << endl;
+                        value[i].push_back(s2d(tempstr[i]));
                         // if(count == 1){
-                        //     cout << s2d(vs[i]) << endl;
+                        //     cout << s2d(tempstr[i]) << endl;
                         // }
                     }
                 }
                 else if(count >= nodeNum && count < nodeNum + element){
-                    vertexPos.push_back(s2i(vs[0]));
-                    vertexPos.push_back(s2i(vs[1]));
-                    vertexPos.push_back(s2i(vs[2]));
-                    vertexPos.push_back(s2i(vs[3]));
+                    vertexPos.push_back(s2i(tempstr[0]));
+                    vertexPos.push_back(s2i(tempstr[1]));
+                    vertexPos.push_back(s2i(tempstr[2]));
+                    vertexPos.push_back(s2i(tempstr[3]));
                 }
                 count++;
             }
@@ -156,8 +159,8 @@ int main(){
         n[res].set(value[i]);
     }
 
-     conduit::relay::io::save(n, "tet1.yaml");
-     conduit::relay::io::load("tet1.yaml", n);
+    conduit::relay::io::save(n, "tet1.yaml");
+    conduit::relay::io::load("tet1.yaml", n);
     ascent::Ascent a;
     a.open();
     a.publish(n);
